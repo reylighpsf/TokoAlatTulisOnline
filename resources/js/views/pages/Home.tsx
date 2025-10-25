@@ -60,7 +60,7 @@ export default function Home() {
               <span className="text-yellow-300">PercetakanAkbar</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
-              Tempat terbaik untuk alat tulis berkualitas dan layanan percetakan profesional
+              Tempat terbaik untuk alat tulis berkualitas dan layanan percetakan 
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/produk">
