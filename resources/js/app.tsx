@@ -1,25 +1,52 @@
-// resources/js/app.tsx
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './views/components/layout/Navbar';
-import AdminNavbar from './views/components/admin/AdminNavbar';
-import CartSheet from './views/components/cart/CartSheet';
-import ProtectedRoute from './views/components/auth/ProtectedRoute';
-import { userRoutes, adminRoutes } from './views/routes/routes';
-import { useAuthStore } from './views/store/authStore';
+import { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import Navbar from "./views/components/layout/Navbar";
+import AdminNavbar from "./views/components/admin/AdminNavbar";
+import CartSheet from "./views/components/cart/CartSheet";
+import ProtectedRoute from "./views/components/auth/ProtectedRoute";
+import { userRoutes, adminRoutes } from "./views/routes/routes";
+import { useAuthStore } from "./views/store/authStore";
+
+/**
+ * 🔄 Middleware Redirect Logic
+ * Menangani redirect otomatis setelah checkAuth() selesai.
+ */
+function AuthRedirectHandler() {
+  const { user, isAuthenticated, isAdminAuthenticated } = useAuthStore();
+  const location = useLocation();
+
+  // Jika sudah login dan mencoba ke /login atau /register
+  if (
+    (isAuthenticated || isAdminAuthenticated) &&
+    ["/login", "/register", "/admin/login"].includes(location.pathname)
+  ) {
+    if (isAdminAuthenticated || user?.role === "admin") {
+      return <Navigate to="/admin" replace />;
+    } else {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // Tidak perlu redirect
+  return null;
+}
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { checkAuth, isLoading: authLoading, user, isAuthenticated } = useAuthStore();
+  const { checkAuth, isLoading: authLoading } = useAuthStore();
 
-  // No cross-tab sync needed
-
-  // Check authentication on app load
+  // Jalankan cek autentikasi saat pertama kali aplikasi dijalankan
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // Show loading screen while checking authentication
+  // Loading spinner saat cek autentikasi
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -33,24 +60,24 @@ function App() {
 
   return (
     <Router>
+      {/* 🧭 Global Redirect Handler */}
+      <AuthRedirectHandler />
+
       <Routes>
-        {/* Admin Routes - Dengan Admin Navbar */}
+        {/* 🔐 ADMIN ROUTES */}
         {adminRoutes.map((route) => (
           <Route
             key={route.name}
             path={route.path}
             element={
-              <ProtectedRoute requireAdmin={route.meta?.requiresAdmin}>
-                <div className="min-h-screen bg-gray-50">
-                  <AdminNavbar />
-                  <route.component />
-                </div>
+              <ProtectedRoute requireAdmin>
+                    <route.component />
               </ProtectedRoute>
             }
           />
         ))}
 
-        {/* User Routes - Dengan Navbar dan Cart */}
+        {/* 👤 USER ROUTES */}
         {userRoutes.map((route) => (
           <Route
             key={route.name}
@@ -69,24 +96,6 @@ function App() {
                     />
                   </div>
                 </ProtectedRoute>
-              ) : route.meta?.guest ? (
-                // Redirect authenticated users away from guest pages
-                isAuthenticated ? (
-                  user?.role === 'admin' ? (
-                    <Navigate to="/admin" replace />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                ) : (
-                  <route.component />
-                )
-              ) : route.path === '/login' && isAuthenticated ? (
-                // Special handling for login page - redirect admin to admin, others to home
-                user?.role === 'admin' ? (
-                  <Navigate to="/admin" replace />
-                ) : (
-                  <Navigate to="/" replace />
-                )
               ) : (
                 <div className="min-h-screen bg-white">
                   <Navbar onCartClick={() => setIsCartOpen(true)} />
@@ -102,9 +111,12 @@ function App() {
             }
           />
         ))}
+
+        {/* 🚧 Default fallback ke Home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
 }
 
-export default App; // ⚠️ ini wajib
+export default App;

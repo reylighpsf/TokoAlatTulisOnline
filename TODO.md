@@ -1,60 +1,32 @@
-# TODO: Perbaikan Autentikasi Admin dengan Sanctum
+# TODO: Fix Product Management Issues
 
-## Masalah Saat Ini:
-- Admin login berhasil, token tersimpan di sessionStorage dengan key "admin_auth_token"
-- Ketika admin membuka halaman kelola produk (/api/products), Laravel mengembalikan "Unauthenticated"
-- Middleware 'role:admin' tidak berfungsi dengan benar
-- Endpoint /api/user tidak mengenali token admin
+## Issues to Fix:
+1. Model Laravel Product:
+   - `casts()` dideklarasikan sebagai method, harus diganti properti `$casts`.
+   - `is_active` sebaiknya punya default `true`.
 
-## Penyebab:
-- Guard Sanctum tidak dikonfigurasi untuk membedakan User dan Admin
-- Model Admin menggunakan tabel 'users' yang sama tapi tidak ada guard khusus
-- Middleware CheckRole tidak dapat mengakses user dari guard yang benar
+2. ProductController:
+   - Pagination response tidak sesuai frontend Zustand (`fetchProducts` mengharapkan `data.data`).
+   - Tidak ada handling jika user ingin menghapus gambar tanpa upload baru.
+   - `per_page` tidak dibatasi, harus ada maksimal (misal 100).
 
-## Rencana Perbaikan:
+3. Frontend Zustand Store:
+   - Setelah create/update/delete, state `products` tidak otomatis terupdate.
+   - Error backend harus di-parse supaya validation errors muncul di form.
+   - Pagination fallback jika response tidak lengkap.
 
-### 1. Konfigurasi Auth Guards (config/auth.php)
-- [x] Tambahkan guard 'admin' untuk Sanctum
-- [x] Konfigurasi provider untuk Admin model
+4. Frontend ProductForm:
+   - Jika kategori dipilih "none", backend harus menerima `null` atau string kosong.
+   - Validasi file max 2MB sudah ada.
+   - Error backend harus tampil di form.
 
-### 2. Update Model Admin (app/Models/Admin.php)
-- [x] Pastikan menggunakan guard 'admin'
-- [x] Update konfigurasi HasApiTokens
+5. Routes:
+   - Pertimbangkan versioning API (`/api/v1`).
 
-### 3. Update AuthController (app/Http/Controllers/AuthController.php)
-- [x] Update adminLogin untuk menggunakan guard 'admin'
-
-### 4. Update Middleware CheckRole (app/Http/Middleware/CheckRole.php)
-- [x] Update untuk mendukung guard admin
-
-### 5. Update Routes API (routes/api.php)
-- [x] Update middleware untuk admin routes
-- [x] Pastikan /api/user dapat mengenali admin tokens
-
-### 6. Testing
-- [ ] Test admin login
-- [ ] Test akses /api/products
-- [ ] Test /api/user endpoint
-- [ ] Test middleware role:admin
-
-## Status: Perbaikan Lengkap Selesai
-
-### Frontend Fixes:
-- [x] Menghapus halaman AdminLogin.tsx yang tidak diperlukan
-- [x] Menghapus route /admin/login
-- [x] Update logout untuk mendukung admin logout
-- [x] Menjalankan AdminUserSeeder untuk membuat akun admin demo
-- [x] Fix redirect admin ke /login bukan / ketika tidak authorized
-- [x] Fix redirect admin yang sudah login ke /admin
-
-### Akun Admin Demo:
-- Email: admin@printshop.com
-- Password: admin123
-
-### Testing Checklist:
-- [ ] Admin login di /login (satu halaman login)
-- [ ] Akses /api/products setelah login admin
-- [ ] Endpoint /api/user mengembalikan data admin
-- [ ] Middleware role:admin berfungsi
-- [ ] Admin logout berfungsi
-- [ ] Admin yang sudah login tidak bisa akses /login lagi
+## Steps:
+- [x] Fix app/Models/Product.php: Change casts() to $casts, add is_active default.
+- [x] Fix app/Http/Controllers/ProductController.php: Fix pagination structure, add remove_image handling, limit per_page.
+- [x] Fix resources/js/views/store/productStore.ts: Update state after CRUD, parse errors, pagination fallback.
+- [x] Fix resources/js/views/components/admin/ProductForm.tsx: Handle "none" category, display backend errors.
+- [x] Update routes/api.php: Prefix product routes with /v1.
+- [x] Test the fixes by running the app and checking CRUD operations.

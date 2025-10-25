@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -10,14 +11,28 @@ import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog';
+import AdminNavbar from '../../components/admin/AdminNavbar'; 
+
+
+// AlertDialog
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription, // <- hanya ini untuk alert
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '../../components/ui/alert-dialog';
 import { useProductStore, Product } from '../../store/productStore';
 import { useAuthStore } from '../../store/authStore';
 import { Plus, Search, Edit, Trash2, Eye, Package, AlertCircle, Loader2 } from 'lucide-react';
 import ProductForm from '../../components/admin/ProductForm';
 
-export default function Products() {
-  const { user } = useAuthStore();
+export default function kelolaProducts() {
+  const { user, isAdminAuthenticated, isLoading } = useAuthStore();
   const {
     products,
     loading,
@@ -34,46 +49,58 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
-  // Categories for filter
-  const categories = [
-    'Buku Tulis',
-    'Alat Tulis',
-    'Kertas',
-    'Map',
-    'Pensil',
-    'Pulpen',
-    'Penghapus',
-    'Penggaris',
-    'Lainnya'
-  ];
+  // ✅ Ambil role & token dari sessionStorage untuk fallback
+  const storedRole = sessionStorage.getItem('role');
+  const storedToken = sessionStorage.getItem('token');
+  const role = user?.role || storedRole?.toLowerCase();
 
+  // 🔄 Jika belum autentikasi dan tidak ada token → arahkan ke login admin
+  if (!isAdminAuthenticated && !storedToken) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // 🔄 Jika role bukan admin → tampilkan akses ditolak
+  if (role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Akses Ditolak</h1>
+          <p className="text-gray-600">
+            Anda tidak memiliki izin untuk mengakses halaman ini.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🔁 Fetch data hanya jika role = admin
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (role === 'admin') {
       fetchProducts();
     }
-  }, [user, fetchProducts]);
+  }, [role, fetchProducts]);
 
   useEffect(() => {
-    // Debounced search
     const timer = setTimeout(() => {
-      fetchProducts({
-        search: searchTerm || undefined,
-        category: selectedCategory === 'all' ? undefined : selectedCategory,
-      });
+      if (role === 'admin') {
+        fetchProducts({
+          search: searchTerm || undefined,
+          category: selectedCategory === 'all' ? undefined : selectedCategory,
+        });
+      }
     }, 300);
-
     return () => clearTimeout(timer);
-  }, [searchTerm, selectedCategory, fetchProducts]);
+  }, [searchTerm, selectedCategory, fetchProducts, role]);
 
   const handleDelete = async () => {
     if (!deletingProduct) return;
-
     try {
       await deleteProduct(deletingProduct.id);
       setDeletingProduct(null);
-      fetchProducts(); // Refresh the list
-    } catch (error) {
-      // Error is handled in the store
+      fetchProducts();
+    } catch {
+      // handled in store
     }
   };
 
@@ -85,50 +112,46 @@ export default function Products() {
     });
   };
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Akses Ditolak</h1>
-          <p className="text-gray-600">Anda tidak memiliki akses ke halaman ini.</p>
-        </div>
-      </div>
-    );
-  }
+  const categories = [
+    'Buku Tulis', 'Alat Tulis', 'Kertas', 'Map', 'Pensil',
+    'Pulpen', 'Penghapus', 'Penggaris', 'Lainnya'
+  ];
 
   return (
-    <div className="py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <AdminNavbar />
+      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Kelola Produk</h1>
             <p className="text-gray-600">Kelola inventaris produk toko alat tulis</p>
           </div>
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Produk
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-                <DialogHeader>
-                  <DialogTitle>Tambah Produk Baru</DialogTitle>
-                  <DialogDescription>
-                    Tambahkan produk baru ke dalam inventaris toko.
-                  </DialogDescription>
-                </DialogHeader>
-                <ProductForm
-                  onSuccess={() => {
-                    setShowCreateModal(false);
-                    fetchProducts();
-                  }}
-                  onCancel={() => setShowCreateModal(false)}
-                />
-              </DialogContent>
-            </Dialog>
+          <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Produk
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+              <DialogHeader>
+                <DialogTitle>Tambah Produk Baru</DialogTitle>
+                <DialogDescription>
+                  Tambahkan produk baru ke dalam inventaris toko.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                onSuccess={() => {
+                  setShowCreateModal(false);
+                  fetchProducts();
+                }}
+                onCancel={() => setShowCreateModal(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Error Alert */}
@@ -144,7 +167,7 @@ export default function Products() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filter */}
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { useAuthStore } from '../../store/authStore';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
@@ -35,7 +35,6 @@ export default function Register() {
       await register(formData.name, formData.email, formData.password);
       navigate('/', { replace: true });
     } catch (error) {
-      // Error sudah ditangani di store
       console.error('Registration failed:', error);
     }
   };

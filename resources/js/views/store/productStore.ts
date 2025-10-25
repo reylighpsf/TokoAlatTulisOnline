@@ -1,156 +1,156 @@
+// src/store/productStore.ts
 import { create } from 'zustand';
-import { adminApi } from '../lib/api';
+import { api, adminApi } from '../lib/api';
 
 export interface Product {
+  created_at: string;
   id: number;
   name: string;
   description?: string;
   price: number;
   stock: number;
-  image?: string;
   category?: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  image?: string;
+}
+
+interface ProductPagination {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
 }
 
 interface ProductState {
   products: Product[];
+  pagination?: ProductPagination;
   loading: boolean;
   error: string | null;
-  pagination: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-  } | null;
 
-  // Actions
-  fetchProducts: (params?: {
-    page?: number;
-    search?: string;
+  fetchProducts: (params?: { page?: number; search?: string; category?: string }) => Promise<void>;
+  createProduct: (data: {
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
     category?: string;
-    is_active?: boolean;
-    per_page?: number;
+    is_active: boolean;
+    image?: File;
   }) => Promise<void>;
-
-  createProduct: (productData: FormData) => Promise<Product>;
-  updateProduct: (id: number, productData: FormData) => Promise<Product>;
+  updateProduct: (id: number, data: {
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+    category?: string;
+    is_active: boolean;
+    image?: File;
+  }) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
-  getProduct: (id: number) => Promise<Product>;
-
-  // UI state
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
   clearError: () => void;
 }
 
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
+  pagination: undefined,
   loading: false,
   error: null,
-  pagination: null,
+
+  clearError: () => set({ error: null }),
 
   fetchProducts: async (params = {}) => {
     set({ loading: true, error: null });
-
     try {
-      const queryParams = new URLSearchParams();
-
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.search) queryParams.append('search', params.search);
-      if (params.category) queryParams.append('category', params.category);
-      if (params.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
-      if (params.per_page) queryParams.append('per_page', params.per_page.toString());
-
-      const response = await adminApi.get(`/products?${queryParams.toString()}`);
-
+      const res = await adminApi.get('/v1/products', { params });
       set({
-        products: response.data.data,
-        pagination: {
-          current_page: response.data.current_page,
-          last_page: response.data.last_page,
-          per_page: response.data.per_page,
-          total: response.data.total,
-        },
+        products: res.data.data || [],
+        pagination: res.data.meta || undefined,
         loading: false,
       });
-    } catch (error: any) {
+    } catch (err: any) {
       set({
-        error: error.response?.data?.message || 'Failed to fetch products',
         loading: false,
+        error:
+          err.response?.data?.message ||
+          'Gagal mengambil produk',
       });
-      throw error;
     }
   },
 
-  createProduct: async (productData: FormData) => {
+  createProduct: async (data) => {
     set({ loading: true, error: null });
-
     try {
-      const response = await adminApi.post('/products', productData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('price', String(data.price));
+      formData.append('stock', String(data.stock));
+      formData.append('is_active', data.is_active ? '1' : '0');
+      if (data.description) formData.append('description', data.description);
+      if (data.category) formData.append('category', data.category);
+      if (data.image) formData.append('image', data.image);
 
-      set({ loading: false });
-      return response.data.product;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to create product';
-      set({ error: errorMessage, loading: false });
-      throw error;
-    }
-  },
-
-  updateProduct: async (id: number, productData: FormData) => {
-    set({ loading: true, error: null });
-
-    try {
-      const response = await adminApi.post(`/products/${id}`, productData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        params: { _method: 'PUT' }, // Laravel requires this for file uploads
+      await adminApi.post('/v1/products', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      await get().fetchProducts(); // refresh list
       set({ loading: false });
-      return response.data.product;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to update product';
-      set({ error: errorMessage, loading: false });
-      throw error;
+    } catch (err: any) {
+      set({
+        loading: false,
+        error:
+          err.response?.data?.message ||
+          Object.values(err.response?.data?.errors || {}).flat().join(', ') ||
+          'Gagal menambahkan produk',
+      });
+      throw err;
     }
   },
 
-  deleteProduct: async (id: number) => {
+  updateProduct: async (id, data) => {
     set({ loading: true, error: null });
-
     try {
-      await adminApi.delete(`/products/${id}`);
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('price', String(data.price));
+      formData.append('stock', String(data.stock));
+      formData.append('is_active', data.is_active ? '1' : '0');
+      if (data.description) formData.append('description', data.description);
+      if (data.category) formData.append('category', data.category);
+      if (data.image) formData.append('image', data.image);
+
+      await adminApi.post(`/v1/products/${id}?_method=PUT`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      await get().fetchProducts(); // refresh list
       set({ loading: false });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete product';
-      set({ error: errorMessage, loading: false });
-      throw error;
+    } catch (err: any) {
+      set({
+        loading: false,
+        error:
+          err.response?.data?.message ||
+          Object.values(err.response?.data?.errors || {}).flat().join(', ') ||
+          'Gagal mengupdate produk',
+      });
+      throw err;
     }
   },
 
-  getProduct: async (id: number) => {
+  deleteProduct: async (id) => {
     set({ loading: true, error: null });
-
     try {
-      const response = await adminApi.get(`/products/${id}`);
+      await adminApi.delete(`/v1/products/${id}`);
+      await get().fetchProducts(); // refresh list
       set({ loading: false });
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to fetch product';
-      set({ error: errorMessage, loading: false });
-      throw error;
+    } catch (err: any) {
+      set({
+        loading: false,
+        error:
+          err.response?.data?.message ||
+          'Gagal menghapus produk',
+      });
+      throw err;
     }
   },
-
-  setLoading: (loading: boolean) => set({ loading }),
-  setError: (error: string | null) => set({ error }),
-  clearError: () => set({ error: null }),
 }));

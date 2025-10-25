@@ -1,18 +1,30 @@
 /**
  * Dashboard Admin untuk mengelola toko
  */
-
 import { useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { useAuthStore } from '../../store/authStore';
 import { useProductStore } from '../../store/productStore';
 import { Users, Package, Printer, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import AdminNavbar from '../../components/admin/AdminNavbar'; // ✅ Tambahkan di sini
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { user } = useAuthStore();
+  let navigate = useNavigate();
   const { products, fetchProducts } = useProductStore();
+  const { user, isAdminAuthenticated, isLoading } = useAuthStore();
 
-  if (!user || user.role !== 'admin') {
+  // ⏳ Tampilkan loading sementara data auth belum siap
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Memuat dashboard...</p>
+      </div>
+    );
+  }
+
+  // 🚫 Jika bukan admin
+  if (!isAdminAuthenticated && user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -69,12 +81,14 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* ✅ Navbar Admin langsung di dalam halaman */}
+      <AdminNavbar />
+
+      <main className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Admin</h1>
-          <p className="text-gray-600">Selamat datang kembali, {user.name}!</p>
         </div>
 
         {/* Stats Grid */}
@@ -98,24 +112,32 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Recent Orders & Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Orders */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Pesanan Terbaru</h2>
             <div className="space-y-4">
               {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-xl"
+                >
                   <div>
                     <p className="font-semibold text-gray-900">{order.id}</p>
                     <p className="text-sm text-gray-600">{order.customer}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">{order.amount}</p>
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        order.status === 'Completed'
+                          ? 'bg-green-100 text-green-800'
+                          : order.status === 'Processing'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </div>
@@ -133,8 +155,8 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-4">
               <Button
                 className="h-16 bg-blue-600 hover:bg-blue-700 rounded-xl"
-                onClick={() => window.location.href = '/admin/products'}
-              >
+                onClick={() => navigate ('/admin/kelolaproducts')}
+                >
                 <Package className="h-5 w-5 mr-2" />
                 Kelola Produk ({products.length})
               </Button>
@@ -153,7 +175,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

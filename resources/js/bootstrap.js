@@ -1,4 +1,11 @@
-import axios from 'axios';
-window.axios = axios;
+import axios from "axios";
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+  withCredentials: true, // penting untuk kirim cookie session
+  headers: {
+    "X-Requested-With": "XMLHttpRequest",
+  },
+});
+
+export default api;

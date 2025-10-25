@@ -2,12 +2,12 @@
  * Komponen Navbar untuk navigasi utama aplikasi
  */
 
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import CartButton from '../cart/CartButton';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
-import { Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
 interface NavbarProps {
@@ -16,13 +16,14 @@ interface NavbarProps {
 
 export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuthStore();
+  const { user, logoutUser } = useAuthStore();
   const { getTotalItems } = useCartStore();
   const location = useLocation();
 
   const handleLogout = async () => {
     if (confirm('Apakah Anda yakin ingin logout?')) {
-      await logout();
+      await logoutUser();
+      window.location.href = '/login';
     }
   };
 
@@ -130,7 +131,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                   {item.name}
                 </Link>
               ))}
-              
+
               {/* Mobile Auth Actions */}
               <div className="pt-4 border-t border-gray-200 space-y-2">
                 {user ? (

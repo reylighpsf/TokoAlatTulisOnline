@@ -1,9 +1,9 @@
 /**
- * Halaman Login Pengguna
+ * Halaman Login Pengguna (User & Admin)
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { useAuthStore } from '../../store/authStore';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -18,23 +18,31 @@ export default function Login() {
   const { login, adminLogin, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      // Try admin login first for admin@printshop.com
-      if (formData.email === 'admin@printshop.com') {
-        await adminLogin(formData.email, formData.password);
-        navigate('/admin', { replace: true });
-      } else {
-        await login(formData.email, formData.password);
-        navigate('/', { replace: true });
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    // Jika admin
+    if (formData.email === 'admin@printshop.com') {
+      const response = await adminLogin(formData.email, formData.password);
+      if (response?.token) {
+        sessionStorage.setItem('admin_auth_token', response.token);
+        sessionStorage.setItem('role', 'admin');
       }
-    } catch (error) {
-      // Error sudah ditangani di store
-      console.error('Login failed:', error);
+      navigate('/admin', { replace: true });
+      return;
     }
-  };
+
+    // Jika user biasa
+    const response = await login(formData.email, formData.password);
+    if (response?.token) {
+      sessionStorage.setItem('auth_token', response.token);
+      sessionStorage.setItem('role', 'user');
+    }
+    navigate('/', { replace: true });
+  } catch (error) {
+    console.error('Login gagal:', error);
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -152,12 +160,8 @@ export default function Login() {
           </div>
 
           <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Demo: customer@example.com / password
-            </p>
-            <p className="text-sm text-gray-600">
-              Admin: admin@printshop.com / admin123
-            </p>
+            <p className="text-sm text-gray-600">Demo: customer@example.com / password</p>
+            <p className="text-sm text-gray-600">Admin: admin@printshop.com / admin123</p>
           </div>
         </form>
       </div>

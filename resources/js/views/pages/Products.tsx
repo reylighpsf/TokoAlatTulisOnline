@@ -13,15 +13,16 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'stationery' | 'printing' | 'copy'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'rating'>('name');
+
   const { addItem } = useCartStore();
   const { products: apiProducts, loading: productsLoading, fetchProducts } = useProductStore();
 
-  // Fetch products on component mount
+  // Fetch products on mount
   useEffect(() => {
-    fetchProducts({ is_active: true });
+    fetchProducts();
   }, [fetchProducts]);
 
-  // Combine static products with API products
+  // Static fallback products
   const staticProducts: (Product & { rating?: number; reviews?: number })[] = [
     {
       id: '1',
@@ -70,50 +71,29 @@ export default function Products() {
       createdAt: '2024-01-12',
       rating: 4.7,
       reviews: 187
-    },
-    {
-      id: '5',
-      name: 'Set Spidol Artistik',
-      description: '48 warna cerah untuk proyek kreatif dan karya seni profesional.',
-      price: 34.99,
-      category: 'stationery',
-      image: 'https://pub-cdn.sider.ai/u/U09GHA636ZJ/web-coder/68f79c71126ded33f3b21fa2/resource/166d3a4f-5753-4342-8999-a657ee711279.jpg',
-      stock: 25,
-      createdAt: '2024-01-11',
-      rating: 4.8,
-      reviews: 67
-    },
-    {
-      id: '6',
-      name: 'Paket Sticky Notes',
-      description: 'Sticky notes warna-warni dalam berbagai ukuran untuk organisasi dan pengingat.',
-      price: 8.99,
-      category: 'stationery',
-      image: 'https://pub-cdn.sider.ai/u/U09GHA636ZJ/web-coder/68f79c71126ded33f3b21fa2/resource/99bc4e26-1f1d-43aa-b806-b4dd4aa556d8.jpg',
-      stock: 75,
-      createdAt: '2024-01-10',
-      rating: 4.5,
-      reviews: 42
     }
   ];
 
-  // Combine API products with static products
-  const allProducts = [
-    ...apiProducts.map(product => ({
-      ...product,
-      rating: 4.5, // Default rating for API products
-      reviews: 10, // Default reviews for API products
-      category: product.category || 'stationery',
-      createdAt: product.created_at || new Date().toISOString(),
-      id: product.id.toString() // Convert id to string
-    })),
-    ...staticProducts
-  ];
+  // Filter API products yang aktif dan gabungkan dengan static
+  const activeApiProducts = apiProducts
+    .filter(p => p.is_active)
+    .map(p => ({
+      ...p,
+      id: p.id.toString(),
+      createdAt: p.created_at || new Date().toISOString(),
+      rating: 4.5,
+      reviews: 10,
+      category: p.category || 'stationery',
+    }));
 
+  const allProducts = [...activeApiProducts, ...staticProducts];
+
+  // Filter berdasarkan kategori
   const filteredProducts = selectedCategory === 'all'
     ? allProducts
     : allProducts.filter(product => product.category === selectedCategory);
 
+  // Sort
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortBy === 'price') return a.price - b.price;
     if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
@@ -122,7 +102,7 @@ export default function Products() {
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
-    // Bisa tambahkan toast notification di sini
+    // TODO: toast notification
   };
 
   return (
@@ -141,20 +121,14 @@ export default function Products() {
           <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
             {/* Category Filters */}
             <div className="flex flex-wrap gap-2">
-              {['all', 'stationery', 'printing', 'copy'].map((category) => (
+              {['all', 'stationery', 'printing', 'copy'].map(category => (
                 <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
-                  className={`rounded-xl ${
-                    selectedCategory === category 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-transparent border-gray-300 hover:bg-gray-50'
-                  }`}
+                  className={`rounded-xl ${selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-transparent border-gray-300 hover:bg-gray-50'}`}
                   onClick={() => setSelectedCategory(category as any)}
                 >
-                  {category === 'all' ? 'Semua' : 
-                   category === 'stationery' ? 'Alat Tulis' :
-                   category === 'printing' ? 'Percetakan' : 'Fotokopi'}
+                  {category === 'all' ? 'Semua' : category === 'stationery' ? 'Alat Tulis' : category === 'printing' ? 'Percetakan' : 'Fotokopi'}
                 </Button>
               ))}
             </div>
@@ -164,17 +138,13 @@ export default function Products() {
               <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg ${
-                    viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
                 >
                   <Grid className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg ${
-                    viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
                 >
                   <List className="h-4 w-4" />
                 </button>
@@ -182,7 +152,7 @@ export default function Products() {
 
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={e => setSortBy(e.target.value as any)}
                 className="bg-white border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="name">Urutkan berdasarkan Nama</option>
@@ -194,89 +164,74 @@ export default function Products() {
         </div>
 
         {/* Products Grid/List */}
-        <div className={
-          viewMode === 'grid' 
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            : "space-y-6"
-        }>
-          {sortedProducts.map((product) => (
-            <div 
-              key={product.id} 
-              className={
-                viewMode === 'grid'
-                  ? "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
-                  : "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group flex"
-              }
-            >
-              {/* Product Image */}
-              <div className={
-                viewMode === 'grid'
-                  ? "relative aspect-square overflow-hidden"
-                  : "relative w-48 flex-shrink-0"
-              }>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <button className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                  <Heart className="h-4 w-4 text-gray-600" />
-                </button>
-                {product.stock < 10 && (
-                  <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    Stok Sedikit
-                  </div>
-                )}
-              </div>
+        {productsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Memuat produk...</span>
+          </div>
+        ) : sortedProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Tidak ada produk yang tersedia.</p>
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-6"}>
+            {sortedProducts.map(product => (
+              <div key={product.id} className={viewMode === 'grid'
+                ? "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
+                : "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group flex"}>
+                
+                {/* Image */}
+                <div className={viewMode === 'grid' ? "relative aspect-square overflow-hidden" : "relative w-48 flex-shrink-0"}>
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <button className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+                    <Heart className="h-4 w-4 text-gray-600" />
+                  </button>
+                  {product.stock < 10 && (
+                    <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      Stok Sedikit
+                    </div>
+                  )}
+                </div>
 
-              {/* Product Info */}
-              <div className={viewMode === 'grid' ? "p-6" : "p-6 flex-1"}>
-                <div className="flex items-center gap-1 mb-2">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < Math.floor(product.rating || 0) 
-                            ? 'text-yellow-400 fill-current' 
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
+                {/* Info */}
+                <div className={viewMode === 'grid' ? "p-6" : "p-6 flex-1"}>
+                  <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-4 w-4 ${i < Math.floor(product.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600 ml-1">({product.reviews || 0})</span>
                   </div>
-                  <span className="text-sm text-gray-600 ml-1">
-                    ({product.reviews || 0})
-                  </span>
-                </div>
-                
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-                
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-gray-900">Rp {product.price.toLocaleString()}</span>
-                    {product.category === 'printing' && (
-                      <span className="text-sm text-gray-500">per halaman</span>
-                    )}
+
+                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-gray-900">Rp {product.price.toLocaleString()}</span>
+                      {product.category === 'printing' && <span className="text-sm text-gray-500">per halaman</span>}
+                    </div>
+                    <span className={`text-sm ${product.stock > 10 ? 'text-green-600' : 'text-red-600'}`}>
+                      {product.stock > 10 ? 'Tersedia' : 'Stok Sedikit'}
+                    </span>
                   </div>
-                  <span className={`text-sm ${
-                    product.stock > 10 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {product.stock > 10 ? 'Tersedia' : 'Stok Sedikit'}
-                  </span>
+
+                  <Button
+                    onClick={() => handleAddToCart(product)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" /> Tambah ke Keranjang
+                  </Button>
                 </div>
-                
-                <Button 
-                  onClick={() => handleAddToCart(product)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Tambah ke Keranjang
-                </Button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Load More */}
         <div className="text-center mt-12">

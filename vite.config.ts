@@ -10,7 +10,7 @@ export default defineConfig({
       input: [
         'resources/js/main.tsx',
         'resources/css/shadcn.css'
-      ], // file kamu
+      ],
       refresh: true,
     }),
     react(),
@@ -21,6 +21,8 @@ export default defineConfig({
     cors: true,
     hmr: {
       host: '127.0.0.1',
+      protocol: 'ws',
+      clientPort: 5173, // tambahkan ini
     },
   },
   resolve: {

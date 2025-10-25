@@ -9,7 +9,7 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import Profile from '../pages/Profile';
 import Dashboard from '../pages/admin/Dashboard';
-import AdminProducts from '../pages/admin/Products';
+import AdminProducts from '../pages/admin/kelolaproducts';
 
 export interface RouteConfig {
   path: string;
@@ -74,7 +74,7 @@ export const adminRoutes: RouteConfig[] = [
     },
   },
   {
-    path: "/admin/products",
+    path: "/admin/kelolaproducts",
     name: "admin-products",
     component: AdminProducts,
     meta: {

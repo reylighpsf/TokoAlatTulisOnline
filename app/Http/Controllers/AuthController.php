@@ -97,8 +97,8 @@ class AuthController extends Controller
         // Delete existing tokens for this admin
         $admin->tokens()->delete();
 
-        // Create new token using admin guard
-        $token = $admin->createToken('admin_auth_token', ['*'], null, 'admin')->plainTextToken;
+        // Create new token using admin guard - pastikan menggunakan guard yang benar
+        $token = $admin->createToken('admin_auth_token')->plainTextToken;
 
         return response()->json([
             'user' => [

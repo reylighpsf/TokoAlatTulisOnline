@@ -36,10 +36,16 @@ class ProductController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 15);
+        $perPage = min($request->get('per_page', 15), 100); // Limit max 100
         $products = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-        return response()->json($products);
+        return response()->json([
+            'data' => $products->items(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+        ]);
     }
 
     /**
@@ -101,6 +107,7 @@ class ProductController extends Controller
             'category' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'remove_image' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -111,6 +118,19 @@ class ProductController extends Controller
         }
 
         $data = $request->only(['name', 'description', 'price', 'stock', 'category', 'is_active']);
+
+        // Handle category "none" as null
+        if ($data['category'] === 'none') {
+            $data['category'] = null;
+        }
+
+        // Handle image removal
+        if ($request->boolean('remove_image')) {
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = null;
+        }
 
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -170,9 +190,15 @@ class ProductController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 15);
+        $perPage = min($request->get('per_page', 15), 100); // Limit max 100
         $products = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-        return response()->json($products);
+        return response()->json([
+            'data' => $products->items(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+        ]);
     }
 }

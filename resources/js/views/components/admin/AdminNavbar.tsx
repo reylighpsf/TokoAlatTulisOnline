@@ -1,27 +1,32 @@
-/**
- * Komponen Navbar khusus untuk halaman Admin
- */
-
-import { Link } from 'react-router';
-import { Button } from '../ui/button';
-import { useAuthStore } from '../../store/authStore';
-import { LogOut, User, Settings, BarChart3, Package, Users, Printer } from 'lucide-react';
-
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "../ui/button";
+import { useAuthStore } from "../../store/authStore";
+import {
+  LogOut,
+  User,
+  Settings,
+  BarChart3,
+  Package,
+  Users,
+  Printer,
+} from "lucide-react";
 export default function AdminNavbar() {
-  const { user, logout } = useAuthStore();
+  const { admin, logoutAdmin, isAdminAuthenticated } = useAuthStore();
+  let navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    if (confirm('Apakah Anda yakin ingin logout?')) {
-      await logout();
-      window.location.href = '/';
+ const handleLogout = async () => {
+    if (confirm("Apakah Anda yakin ingin logout?")) {
+      await logoutAdmin();
+      navigate('/login', { replace: true });
     }
   };
 
   const adminNavigation = [
-    { name: 'Dashboard', href: '/admin', icon: BarChart3 },
-    { name: 'Kelola Produk', href: '/admin/products', icon: Package },
-    { name: 'Kelola User', href: '/admin/users', icon: Users },
-    { name: 'Layanan Percetakan', href: '/admin/printing', icon: Printer },
+    { name: "Dashboard", href: "/admin", icon: BarChart3 },
+    { name: 'Kelola Produk', href: '/admin/kelolaproducts', icon: Package },
+    { name: "Kelola User", href: "/admin/users", icon: Users },
+    { name: "Layanan Percetakan", href: "/admin/printing", icon: Printer },
   ];
 
   return (
@@ -39,27 +44,38 @@ export default function AdminNavbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            {adminNavigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
-              >
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.name}
-              </Link>
-            ))}
+          {/* Navigasi */}
+          <div className="hidden md:flex items-center space-x-4">
+            {adminNavigation.map((item) => {
+              const isActive = location.pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4 mr-2" />
+                  {item.name}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Admin Actions */}
+          {/* Info Admin + Logout */}
           <div className="flex items-center space-x-4">
-            <div className="hidden md:flex items-center space-x-3 text-sm">
-              <User className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-300">{user?.name}</span>
-              <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-full">Admin</span>
-            </div>
+            {isAdminAuthenticated && (
+              <div className="hidden md:flex items-center space-x-2 text-sm">
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-300">{admin?.name || "Admin"}</span>
+                <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-full">
+                  Admin
+                </span>
+              </div>
+            )}
 
             <Button
               variant="outline"

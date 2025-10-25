@@ -2,17 +2,17 @@
  * API utilities for making HTTP requests
  */
 
-import axios from 'axios';
+import axios from "axios";
 
 // Base API URL
-const BASE_URL = 'http://127.0.0.1:8000/api';
+const BASE_URL = "http://127.0.0.1:8000/api";
 
 // Create axios instance for user API
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
@@ -20,8 +20,8 @@ const api = axios.create({
 const adminApi = axios.create({
   baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
@@ -29,9 +29,9 @@ const adminApi = axios.create({
  * Helper: Add CSRF token (if needed for POST requests)
  */
 const addCsrfToken = (config: any) => {
-  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
   if (token) {
-    config.headers['X-CSRF-TOKEN'] = token;
+    config.headers["X-CSRF-TOKEN"] = token;
   }
   return config;
 };
@@ -42,7 +42,8 @@ const addCsrfToken = (config: any) => {
 api.interceptors.request.use((config) => {
   addCsrfToken(config);
 
-  const authToken = localStorage.getItem('auth_token'); // 🟢 FIXED: pakai localStorage
+  const authToken =
+    sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token");
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
@@ -53,7 +54,9 @@ api.interceptors.request.use((config) => {
 adminApi.interceptors.request.use((config) => {
   addCsrfToken(config);
 
-  const adminToken = localStorage.getItem('admin_auth_token'); // 🟢 FIXED
+  const adminToken =
+    sessionStorage.getItem("admin_auth_token") ||
+    localStorage.getItem("admin_auth_token");
   if (adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
   }
@@ -68,10 +71,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      // Jika user biasa, arahkan ke login biasa
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      sessionStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_token");
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
@@ -82,10 +85,10 @@ adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('admin_auth_token');
-      // 🟢 Arahkan ke login biasa, bukan /admin/login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      sessionStorage.removeItem("admin_auth_token");
+      localStorage.removeItem("admin_auth_token");
+      if (window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
       }
     }
     return Promise.reject(error);

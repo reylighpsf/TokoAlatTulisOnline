@@ -1,285 +1,190 @@
-/**
- * Komponen Form untuk membuat/mengedit produk
- */
-
-import { useState, useEffect } from 'react';
+// src/components/admin/ProductForm.tsx
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Checkbox } from '../ui/checkbox';
 import { Textarea } from '../ui/textarea';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
-import { Card, CardContent } from '../ui/card';
 import { useProductStore, Product } from '../../store/productStore';
-import { Upload, X, Loader2, Package } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 
 interface ProductFormProps {
   product?: Product | null;
-  onSuccess: () => void;
-  onCancel: () => void;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export default function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) {
-  const { createProduct, updateProduct, loading } = useProductStore();
+export default function ProductForm({ product = null, onSuccess, onCancel }: ProductFormProps) {
+  const isEdit = !!product;
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    stock: '',
-    category: 'none',
-    is_active: true,
-  });
+  const { createProduct, updateProduct, loading, error, clearError } = useProductStore();
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [name, setName] = useState(product?.name || '');
+  const [description, setDescription] = useState(product?.description || '');
+  const [price, setPrice] = useState(product?.price || 0);
+  const [stock, setStock] = useState(product?.stock || 0);
+  const [category, setCategory] = useState(product?.category || '');
+  const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(product?.image ? `/storage/${product.image}` : '');
 
-  const categories = [
-    'Buku Tulis',
-    'Alat Tulis',
-    'Kertas',
-    'Map',
-    'Pensil',
-    'Pulpen',
-    'Penghapus',
-    'Penggaris',
-    'Lainnya'
-  ];
+  // Reset preview jika user ganti image
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setPreviewUrl('');
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      if (isEdit && product?.id) {
+        await updateProduct(product.id, {
+          name,
+          description,
+          price,
+          stock,
+          category,
+          is_active: isActive,
+          image: imageFile || undefined,
+        });
+      } else {
+        await createProduct({
+          name,
+          description,
+          price,
+          stock,
+          category,
+          is_active: isActive,
+          image: imageFile || undefined,
+        });
+      }
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name,
-        description: product.description || '',
-        price: product.price.toString(),
-        stock: product.stock.toString(),
-        category: product.category || 'none',
-        is_active: product.is_active,
-      });
-
-      if (product.image) {
-        setImagePreview(`/storage/${product.image}`);
+    return () => {
+      clearError?.();
+      if (previewUrl && imageFile) {
+        URL.revokeObjectURL(previewUrl);
       }
-    }
-  }, [product]);
+    };
+  }, [previewUrl, imageFile, clearError]);
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setSelectedFile(null);
-    setImagePreview(product?.image ? `/storage/${product.image}` : null);
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Nama produk wajib diisi';
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = 'Harga harus lebih dari 0';
-    }
-
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = 'Stok tidak boleh negatif';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    try {
-      const submitData = new FormData();
-      submitData.append('name', formData.name);
-      submitData.append('description', formData.description);
-      submitData.append('price', formData.price);
-      submitData.append('stock', formData.stock);
-      submitData.append('category', formData.category);
-      submitData.append('is_active', formData.is_active.toString());
-      if (selectedFile) submitData.append('image', selectedFile);
-
-      if (product) {
-        await updateProduct(product.id, submitData);
-      } else {
-        await createProduct(submitData);
-      }
-
-      onSuccess();
-    } catch (error: any) {
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-      }
-    }
-  };
+  const categories = [
+    'Buku Tulis', 'Alat Tulis', 'Kertas', 'Map', 'Pensil',
+    'Pulpen', 'Penghapus', 'Penggaris', 'Lainnya'
+  ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Image Upload */}
-      <Card className="bg-white shadow-md border border-gray-200">
-        <CardContent className="pt-6">
-          <Label className="text-base font-medium">Gambar Produk</Label>
-          <div className="mt-2">
-            {imagePreview ? (
-              <div className="relative inline-block">
-                <img
-                  src={imagePreview}
-                  alt="Product preview"
-                  className="w-32 h-32 object-cover rounded-lg border border-gray-300 bg-gray-100"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                  onClick={removeImage}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-100">
-                <Package className="h-8 w-8 text-gray-400" />
-              </div>
-            )}
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Error Alert */}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
 
-          <div className="mt-4">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              id="image-upload"
-            />
-            <Label
-              htmlFor="image-upload"
-              className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg cursor-pointer hover:bg-gray-300 transition-colors"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {imagePreview ? 'Ganti Gambar' : 'Pilih Gambar'}
-            </Label>
-            <p className="text-sm text-gray-500 mt-1">PNG, JPG, GIF hingga 2MB</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">Nama Produk</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">Kategori</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2"
+            required
+          >
+            <option value="">Pilih Kategori</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      {/* Basic Information */}
-      <Card className="bg-white shadow-md border border-gray-200">
-        <CardContent className="pt-6 space-y-4">
-          <div>
-            <Label htmlFor="name">Nama Produk *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Masukkan nama produk"
-              className={`bg-white border ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
-          </div>
+      <div>
+        <label className="block mb-1 font-medium text-gray-700">Deskripsi</label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
 
-          <div>
-            <Label htmlFor="description">Deskripsi</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Masukkan deskripsi produk"
-              rows={3}
-              className="bg-white border border-gray-300"
-            />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">Harga</label>
+          <Input
+            type="number"
+            min={0}
+            value={price}
+            onChange={(e) => setPrice(Number(e.target.value))}
+            required
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">Stok</label>
+          <Input
+            type="number"
+            min={0}
+            value={stock}
+            onChange={(e) => setStock(Number(e.target.value))}
+            required
+          />
+        </div>
+        <div className="flex items-center mt-6">
+          <Checkbox
+            checked={isActive}
+            onCheckedChange={(checked: any) => setIsActive(Boolean(checked))}
+            id="isActive"
+          />
+          <label htmlFor="isActive" className="ml-2 text-gray-700">Aktif</label>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Harga (Rp) *</Label>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                placeholder="0.00"
-                className={`bg-white border ${errors.price ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
+      <div>
+        <label className="block mb-1 font-medium text-gray-700">Gambar</label>
+        <div className="flex items-center gap-4">
+          <input type="file" accept="image/*" onChange={handleImageChange} />
+          {previewUrl && (
+            <div className="relative">
+              <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
+          )}
+        </div>
+      </div>
 
-            <div>
-              <Label htmlFor="stock">Stok *</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                value={formData.stock}
-                onChange={(e) => handleInputChange('stock', e.target.value)}
-                placeholder="0"
-                className={`bg-white border ${errors.stock ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.stock && <p className="text-sm text-red-500 mt-1">{errors.stock}</p>}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="category">Kategori</Label>
-            <Select value={formData.category} onValueChange={(value: string) => handleInputChange('category', value)}>
-              <SelectTrigger className="bg-white border border-gray-300">
-                <SelectValue placeholder="Pilih kategori" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="none">Tidak ada kategori</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked: boolean) => handleInputChange('is_active', checked)}
-            />
-            <Label htmlFor="is_active">Produk aktif</Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Form Actions */}
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Batal
-        </Button>
-        <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
-          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {product ? 'Update Produk' : 'Simpan Produk'}
+      <div className="flex justify-end gap-2 mt-4">
+        {onCancel && (
+          <Button variant="outline" onClick={onCancel} type="button">
+            Batal
+          </Button>
+        )}
+        <Button type="submit" disabled={loading}>
+          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin inline-block" />}
+          {isEdit ? 'Update Produk' : 'Tambah Produk'}
         </Button>
       </div>
     </form>
