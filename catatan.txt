@@ -1,0 +1,24 @@
+1.versi 1-commit(githup)
+	//Rilis pertama website layanan percetakan online.
+	Fitur utama: tampilkan produk, detail produk, form order, dan kontak.
+2.versi 1.2-update 
+	Penambahan fitur keranjang belanja (cart).
+	Integrasi checkout dan order ke backend API.
+	Tampilan cart drawer (slide-in) modern.
+	Perbaikan navigasi dan UI/UX halaman utama.
+3.versi 1.3-update 
+	Penambahan dashboard admin untuk:
+	penambahan layanan percetakan
+	Kelola produk (CRUD + stok otomatis berkurang saat order).
+	Kelola pesanan dan status order.
+	Tampilan statistik penjualan & pelanggan.
+	Peningkatan keamanan API (CSRF/token).
+	Optimalisasi performa dan perbaikan bug kecil.
+
+
+Catatan Masalah
+
+#perbaikkan logic Kelola pesanan :user keluar > error Kelola pesanan > tidak    	bisa menangkap data (tidak mengambil data semua user)
+#kesalahan popup pembayaran percetakan
+#update fitur Kelola user
+#Database Keuangan

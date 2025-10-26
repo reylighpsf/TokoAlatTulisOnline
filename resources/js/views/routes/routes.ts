@@ -8,8 +8,13 @@ import PrintingServices from '../pages/PrintingServices';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import Profile from '../pages/Profile';
+import OrderHistory from '../pages/OrderHistory';
+import OrderDetails from '../pages/OrderDetails';
+import Checkout from '../pages/Checkout';
 import Dashboard from '../pages/admin/Dashboard';
 import AdminProducts from '../pages/admin/kelolaproducts';
+import OrderManagement from '../pages/admin/OrderManagement';
+import PrintOrderManagement from '../pages/admin/PrintOrderManagement';
 
 export interface RouteConfig {
   path: string;
@@ -62,6 +67,30 @@ export const userRoutes: RouteConfig[] = [
       requiresAuth: true,
     },
   },
+  {
+    path: "/orders",
+    name: "order-history",
+    component: OrderHistory,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: "/orders/:id",
+    name: "order-details",
+    component: OrderDetails,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: "/checkout",
+    name: "checkout",
+    component: Checkout,
+    meta: {
+      requiresAuth: true,
+    },
+  },
 ];
 
 export const adminRoutes: RouteConfig[] = [
@@ -77,6 +106,22 @@ export const adminRoutes: RouteConfig[] = [
     path: "/admin/kelolaproducts",
     name: "admin-products",
     component: AdminProducts,
+    meta: {
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: "/admin/orders",
+    name: "admin-orders",
+    component: OrderManagement,
+    meta: {
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: "/admin/print-orders",
+    name: "admin-prints",
+    component: PrintOrderManagement,
     meta: {
       requiresAdmin: true,
     },

@@ -44,6 +44,14 @@ class Product extends Model
     ];
 
     /**
+     * Get the full URL for the product image.
+     */
+    public function getImageAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
+
+    /**
      * Scope a query to only include active products.
      */
     public function scopeActive($query)

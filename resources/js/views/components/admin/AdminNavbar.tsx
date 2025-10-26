@@ -9,7 +9,9 @@ import {
   Package,
   Users,
   Printer,
+  ShoppingCart,
 } from "lucide-react";
+
 export default function AdminNavbar() {
   const { admin, logoutAdmin, isAdminAuthenticated } = useAuthStore();
   let navigate = useNavigate();
@@ -25,8 +27,9 @@ export default function AdminNavbar() {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: BarChart3 },
     { name: 'Kelola Produk', href: '/admin/kelolaproducts', icon: Package },
+    { name: 'Kelola Pesanan', href: '/admin/orders', icon: ShoppingCart },
     { name: "Kelola User", href: "/admin/users", icon: Users },
-    { name: "Layanan Percetakan", href: "/admin/printing", icon: Printer },
+    { name: "Layanan Percetakan", href: "/admin/print-orders", icon: Printer },
   ];
 
   return (

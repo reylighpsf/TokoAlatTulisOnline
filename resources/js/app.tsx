@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,8 +7,6 @@ import {
   useLocation,
 } from "react-router-dom";
 import Navbar from "./views/components/layout/Navbar";
-import AdminNavbar from "./views/components/admin/AdminNavbar";
-import CartSheet from "./views/components/cart/CartSheet";
 import ProtectedRoute from "./views/components/auth/ProtectedRoute";
 import { userRoutes, adminRoutes } from "./views/routes/routes";
 import { useAuthStore } from "./views/store/authStore";
@@ -33,12 +31,13 @@ function AuthRedirectHandler() {
     }
   }
 
-  // Tidak perlu redirect
-  return null;
+  return null; // Tidak perlu redirect
 }
 
+/**
+ * 🌐 Komponen utama aplikasi
+ */
 function App() {
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const { checkAuth, isLoading: authLoading } = useAuthStore();
 
   // Jalankan cek autentikasi saat pertama kali aplikasi dijalankan
@@ -46,7 +45,7 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  // Loading spinner saat cek autentikasi
+  // ⏳ Loading spinner saat cek autentikasi
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -71,7 +70,7 @@ function App() {
             path={route.path}
             element={
               <ProtectedRoute requireAdmin>
-                    <route.component />
+                <route.component />
               </ProtectedRoute>
             }
           />
@@ -86,26 +85,18 @@ function App() {
               route.meta?.requiresAuth ? (
                 <ProtectedRoute>
                   <div className="min-h-screen bg-white">
-                    <Navbar onCartClick={() => setIsCartOpen(true)} />
+                    <Navbar />
                     <main>
                       <route.component />
                     </main>
-                    <CartSheet
-                      isOpen={isCartOpen}
-                      onClose={() => setIsCartOpen(false)}
-                    />
                   </div>
                 </ProtectedRoute>
               ) : (
                 <div className="min-h-screen bg-white">
-                  <Navbar onCartClick={() => setIsCartOpen(true)} />
+                  <Navbar />
                   <main>
                     <route.component />
                   </main>
-                  <CartSheet
-                    isOpen={isCartOpen}
-                    onClose={() => setIsCartOpen(false)}
-                  />
                 </div>
               )
             }

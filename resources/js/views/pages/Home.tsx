@@ -2,32 +2,44 @@
  * Halaman Beranda PrintShop
  */
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button';
 import { ArrowRight, Star, Shield, Truck, Headphones } from 'lucide-react';
+import { useCartStore } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
 
 export default function Home() {
+  const { addItem } = useCartStore();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
   const featuredProducts = [
     {
       id: '1',
       name: 'Set Buku Catatan Premium',
       price: 25.99,
       image: 'https://pub-cdn.sider.ai/u/U09GHA636ZJ/web-coder/68f79c71126ded33f3b21fa2/resource/02bc999f-8900-4854-b7c5-1cc27834fa26.jpg',
-      rating: 4.8
+      rating: 4.8,
+      stock: 50,
+      category: 'stationery'
     },
     {
-      id: '2', 
+      id: '2',
       name: 'Paket Pulpen Profesional',
       price: 15.50,
       image: 'https://pub-cdn.sider.ai/u/U09GHA636ZJ/web-coder/68f79c71126ded33f3b21fa2/resource/94f3385c-7c10-4fe4-8c4f-a0b38b43b375.jpg',
-      rating: 4.6
+      rating: 4.6,
+      stock: 100,
+      category: 'stationery'
     },
     {
       id: '3',
       name: 'Set Spidol Artistik',
       price: 34.99,
       image: 'https://pub-cdn.sider.ai/u/U09GHA636ZJ/web-coder/68f79c71126ded33f3b21fa2/resource/0e506edc-9b3b-4a9e-9984-83d4dc59abd0.jpg',
-      rating: 4.8
+      rating: 4.8,
+      stock: 75,
+      category: 'stationery'
     }
   ];
 
@@ -49,6 +61,14 @@ export default function Home() {
     }
   ];
 
+  const handleAddToCart = (product: any) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    addItem(product, 1); // Initialize with quantity 1
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -60,7 +80,7 @@ export default function Home() {
               <span className="text-yellow-300">PercetakanAkbar</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
-              Tempat terbaik untuk alat tulis berkualitas dan layanan percetakan 
+              Tempat terbaik untuk alat tulis berkualitas dan layanan percetakan
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/produk">
@@ -90,7 +110,7 @@ export default function Home() {
               Kami memberikan yang terbaik untuk kebutuhan alat tulis dan percetakan Anda
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {services.map((service, index) => (
               <div key={index} className="bg-white p-8 rounded-2xl shadow-lg text-center hover:shadow-xl transition-shadow">
@@ -135,11 +155,11 @@ export default function Home() {
                   <div className="flex items-center gap-1 mb-2">
                     <div className="flex items-center">
                       {[...Array(5)].map((_, i) => (
-                        <Star 
+                        <Star
                           key={i}
                           className={`h-4 w-4 ${
-                            i < Math.floor(product.rating) 
-                              ? 'text-yellow-400 fill-current' 
+                            i < Math.floor(product.rating)
+                              ? 'text-yellow-400 fill-current'
                               : 'text-gray-300'
                           }`}
                         />
@@ -154,11 +174,12 @@ export default function Home() {
                     <span className="text-2xl font-bold text-gray-900">
                       Rp {product.price.toLocaleString()}
                     </span>
-                    <Link to="/produk">
-                      <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl">
-                        Beli Sekarang
-                      </Button>
-                    </Link>
+                    <Button
+                      onClick={() => handleAddToCart(product)}
+                      className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                    >
+                      Beli Sekarang
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -8,6 +8,8 @@ import { Product } from '../types';
 import { Filter, Grid, List, Star, Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { useProductStore } from '../store/productStore';
+import { useAuthStore } from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'stationery' | 'printing' | 'copy'>('all');
@@ -16,6 +18,8 @@ export default function Products() {
 
   const { addItem } = useCartStore();
   const { products: apiProducts, loading: productsLoading, fetchProducts } = useProductStore();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   // Fetch products on mount
   useEffect(() => {
@@ -101,7 +105,11 @@ export default function Products() {
   });
 
   const handleAddToCart = (product: Product) => {
-    addItem(product);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    addItem(product, 1); // Initialize with quantity 1
     // TODO: toast notification
   };
 
@@ -179,7 +187,7 @@ export default function Products() {
               <div key={product.id} className={viewMode === 'grid'
                 ? "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
                 : "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group flex"}>
-                
+
                 {/* Image */}
                 <div className={viewMode === 'grid' ? "relative aspect-square overflow-hidden" : "relative w-48 flex-shrink-0"}>
                   <img

@@ -5,9 +5,11 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Upload, FileText, Printer } from 'lucide-react';
+import PrintModal from '../components/print/PrintModal';
 
 export default function PrintingServices() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const printingOptions = [
     {
@@ -34,6 +36,12 @@ export default function PrintingServices() {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+    }
+  };
+
+  const handlePrintNow = () => {
+    if (selectedFile) {
+      setIsModalOpen(true);
     }
   };
 
@@ -68,6 +76,16 @@ export default function PrintingServices() {
               </label>
             </Button>
           </div>
+
+          {/* Print Now Button */}
+          {selectedFile && (
+            <div className="mt-4 text-center">
+              <Button onClick={handlePrintNow} className="bg-blue-600 hover:bg-blue-700">
+                <Printer className="h-4 w-4 mr-2" />
+                Print Sekarang
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Opsi Percetakan */}
@@ -112,6 +130,13 @@ export default function PrintingServices() {
           </div>
         </div>
       </div>
+
+      {/* Print Modal */}
+      <PrintModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        selectedFile={selectedFile}
+      />
     </div>
   );
 }
